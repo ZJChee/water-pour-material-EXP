@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Water Pouring Sound Task</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600&family=Noto+Sans+JP:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #8f8f8f;
+    --panel: #ececec;
+    --panel-edge: #d6d6d6;
+    --ink: #1b1b1b;
+    --ink-soft: #4a4a4a;
+    --ink-faint: #7a7a7a;
+    --focus: #1b1b1b;
+    --sans: "Noto Sans", "Noto Sans JP", "Hiragino Sans", "Microsoft JhengHei", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  html[lang="ja"] { --sans: "Noto Sans JP", "Noto Sans", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif; }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+  }
+  .leave-warning {
+    background: var(--ink);
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 600;
+    padding: 12px 110px 12px 20px;   /* right padding keeps clear of the language switcher */
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+  }
+  @media (max-width: 520px) { .leave-warning { font-size: 13px; padding: 10px 84px 10px 16px; } }
+  main {
+    flex: 1 0 auto;
+    display: grid;
+    place-items: center;
+    padding: 32px 20px;
+  }
+  .screen { display: none; width: 100%; }
+  .screen.active { display: block; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 36px 40px 32px;
+  }
+  @media (max-width: 520px) { .panel { padding: 28px 22px 24px; } }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 8px;
+  }
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+  p { margin: 0 0 14px; max-width: 62ch; color: var(--ink-soft); }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+
+  label.field { display: block; font-size: 14px; color: var(--ink-soft); }
+  label.field span { display: block; margin-bottom: 6px; }
+  .field > span { display: block; margin-bottom: 6px; font-size: 14px; color: var(--ink-soft); }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    font: 500 16px var(--mono);
+    padding: 10px 12px;
+    border: 1px solid var(--ink-faint);
+    background: #fff;
+    color: var(--ink);
+    border-radius: 0;
+  }
+  input[type="text"]:focus-visible, input[type="number"]:focus-visible, select:focus-visible, button:focus-visible, .lang button:focus-visible, input[type="radio"]:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--ink); cursor: pointer; }
+  .check input { margin-top: 5px; width: 18px; height: 18px; accent-color: var(--ink); flex: none; }
+  .radio-group { display: flex; gap: 18px; flex-wrap: wrap; }
+  .radio-group label {
+    display: flex; gap: 8px; align-items: center;
+    font-size: 15px; color: var(--ink); cursor: pointer;
+  }
+  .radio-group.vertical { flex-direction: column; gap: 10px; }
+  .req-note { font-size: 13px; color: var(--ink-faint); margin: 0 0 4px; }
+  .radio-group input[type="radio"] {
+    width: 18px; height: 18px; accent-color: var(--ink); flex: none; margin: 0;
+  }
+
+  button {
+    font: 600 15px var(--sans);
+    padding: 11px 22px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: #fff;
+    cursor: pointer;
+    border-radius: 0;
+  }
+  button.secondary { background: transparent; color: var(--ink); }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* Language chooser */
+  .lang { display: grid; gap: 10px; margin-top: 8px; }
+  .lang button {
+    display: flex; justify-content: space-between; align-items: baseline;
+    width: 100%; text-align: left;
+    background: #fff; color: var(--ink); border: 1px solid var(--panel-edge);
+    padding: 14px 18px; font-weight: 600; font-size: 17px;
+  }
+  .lang button small { font: 400 12px var(--mono); color: var(--ink-faint); letter-spacing: 0.06em; }
+  .lang button:hover { border-color: var(--ink); }
+
+  /* Persistent language switcher */
+  .lang-switcher {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    font-family: var(--sans);
+  }
+  .lang-switcher .toggle {
+    display: flex; align-items: center; gap: 6px;
+    font: 600 13px var(--mono);
+    letter-spacing: 0.04em;
+    padding: 8px 12px;
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--panel-edge);
+  }
+  .lang-switcher .toggle:hover { border-color: var(--ink); }
+  .lang-switcher .toggle .caret { font-size: 10px; opacity: 0.6; }
+  .lang-menu[hidden] { display: none; }
+  .lang-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    display: grid;
+    min-width: 150px;
+    background: #fff;
+    border: 1px solid var(--panel-edge);
+  }
+  .lang-menu button {
+    display: flex; justify-content: space-between; align-items: center;
+    width: 100%; text-align: left;
+    font: 500 14px var(--sans);
+    padding: 10px 14px;
+    background: #fff;
+    color: var(--ink);
+    border: none;
+    border-bottom: 1px solid var(--panel-edge);
+  }
+  .lang-menu button:last-child { border-bottom: none; }
+  .lang-menu button:hover { background: var(--panel); }
+  .lang-menu button[aria-current="true"] { font-weight: 600; }
+  .lang-menu button[aria-current="true"]::after { content: "✓"; font-size: 12px; }
+
+  /* Trial screen */
+  .trial {
+    display: flex; flex-direction: column; align-items: center; gap: 28px;
+    width: 100%; max-width: 480px; margin: 0 auto;
+  }
+  .counter {
+    font: 500 13px var(--mono);
+    letter-spacing: 0.06em;
+    color: #2b2b2b;
+    font-variant-numeric: tabular-nums;
+    align-self: flex-start;
+    min-height: 20px;
+  }
+  .practice-note { margin: 0; padding: 10px 14px; background: var(--panel); border: 1px solid var(--panel-edge); font-size: 14px; color: var(--ink); text-align: center; max-width: none; }
+  .listen { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  button.play { font-size: 20px; padding: 18px 40px; min-width: 240px; }
+  .listen-hint {
+    margin: 0; min-height: 24px; text-align: center;
+    font-size: 14px; color: #1b1b1b; max-width: 40ch;
+  }
+  .question {
+    font-size: 19px; font-weight: 600; color: #1b1b1b;
+    text-align: center; line-height: 1.45; text-wrap: balance;
+  }
+  .choices { display: grid; gap: 10px; width: 100%; }
+  button.choice {
+    width: 100%; text-align: left;
+    background: #fff; color: var(--ink);
+    border: 1px solid var(--panel-edge);
+    padding: 14px 18px; font-size: 17px; font-weight: 600;
+  }
+  button.choice:not(:disabled):hover { border-color: var(--ink); }
+  button.choice[aria-checked="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+  button.choice:disabled { opacity: 0.45; }
+  .trial .actions { justify-content: center; margin-top: 0; }
+
+  .status { font-size: 19px; font-weight: 600; line-height: 1.45; color: var(--ink); }
+  @media (max-width: 520px) { .status { font-size: 17px; } }
+  .code {
+    font: 500 22px var(--mono); letter-spacing: 0.12em;
+    background: #fff; border: 1px solid var(--panel-edge);
+    padding: 12px 16px; display: inline-block; margin: 6px 0 14px;
+  }
+  .hidden { display: none !important; }
+</style>
+
+</head>
+<body>
+<div class="lang-switcher" id="lang-switcher" style="display:none">
+  <button type="button" class="toggle" id="lang-switch-btn" aria-haspopup="true" aria-expanded="false">
+    <span id="lang-switch-label">EN</span><span class="caret">▾</span>
+  </button>
+  <div class="lang-menu" id="lang-menu" hidden>
+    <button type="button" data-lang="ja">日本語</button>
+    <button type="button" data-lang="en">English</button>
+  </div>
+</div>
+<div class="leave-warning" id="leave-warning" role="alert" data-i18n="leaveWarning" hidden></div>
+<main>
+  <!-- 0. Language -->
+  <section class="screen active" id="s-lang">
+    <div class="panel">
+      <p class="eyebrow">［所属機関名 / Institution name］</p>
+      <h1>言語を選んでください / Choose a language</h1>
+      <div class="lang">
+        <button type="button" data-lang="ja">日本語 <small>JA</small></button>
+        <button type="button" data-lang="en">English <small>EN</small></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1. Consent + demographics -->
+  <section class="screen" id="s-consent">
+    <div class="panel">
+      <p class="eyebrow" data-i18n="eyebrow"></p>
+      <h1 data-i18n="title"></h1>
+      <p data-i18n="consent1"></p>
+      <p data-i18n="consent2"></p>
+      <div class="stack" style="margin-top:22px">
+        <p class="req-note" data-i18n="requiredNote"></p>
+        <label class="field">
+          <span data-i18n="ageLabel"></span>
+          <input type="number" id="age" inputmode="numeric" min="1" max="120" step="1" autocomplete="off" required>
+        </label>
+        <div class="field">
+          <span data-i18n="genderLabel"></span>
+          <div class="radio-group" id="gender-group">
+            <label><input type="radio" name="gender" value="male"><span data-i18n="genderMale"></span></label>
+            <label><input type="radio" name="gender" value="female"><span data-i18n="genderFemale"></span></label>
+            <label><input type="radio" name="gender" value="other"><span data-i18n="genderOther"></span></label>
+            <label><input type="radio" name="gender" value="no_answer"><span data-i18n="genderNoAnswer"></span></label>
+          </div>
+        </div>
+        <div class="field">
+          <span data-i18n="hearingLabel"></span>
+          <div class="radio-group vertical" id="hearing-group">
+            <label><input type="radio" name="hearing" value="normal"><span data-i18n="hearingNormal"></span></label>
+            <label><input type="radio" name="hearing" value="some_difficulty"><span data-i18n="hearingDifficulty"></span></label>
+            <label><input type="radio" name="hearing" value="hearing_aid"><span data-i18n="hearingAid"></span></label>
+            <label><input type="radio" name="hearing" value="not_sure"><span data-i18n="hearingNotSure"></span></label>
+          </div>
+        </div>
+        <label class="check">
+          <input type="checkbox" id="consent">
+          <span data-i18n="consentCheck"></span>
+        </label>
+      </div>
+      <div class="actions">
+        <button type="button" id="btn-consent" disabled data-i18n="next"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Instructions -->
+  <section class="screen" id="s-instr">
+    <div class="panel">
+      <p class="eyebrow" data-i18n="eyebrow"></p>
+      <h1 data-i18n="instrTitle"></h1>
+      <p data-i18n="instr1"></p>
+      <p data-i18n="instr2"></p>
+      <p id="instr-note"></p>
+      <p data-i18n="instr3"></p>
+      <p data-i18n="instrPractice"></p>
+      <div class="actions">
+        <button type="button" id="btn-start" data-i18n="start"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Trial (reused for every stimulus) -->
+  <section class="screen" id="s-trial">
+    <div class="trial">
+      <div class="counter" id="counter"></div>
+      <p class="practice-note" id="practice-note" hidden></p>
+      <div class="listen">
+        <button type="button" class="play" id="btn-play" disabled></button>
+        <p class="listen-hint" id="listen-hint"></p>
+      </div>
+      <div class="question" data-i18n="question"></div>
+      <div class="choices" id="choices" role="radiogroup"></div>
+      <div class="actions">
+        <button type="button" id="btn-next" disabled data-i18n="next"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3b. Start of main trials / 3c. Break -->
+  <section class="screen" id="s-main-intro">
+    <div class="panel">
+      <p class="eyebrow" data-i18n="eyebrow"></p>
+      <h1 data-i18n="mainIntroTitle"></h1>
+      <p data-i18n="mainIntro1"></p>
+      <div class="actions"><button type="button" id="btn-main-start" data-i18n="start"></button></div>
+    </div>
+  </section>
+  <section class="screen" id="s-break">
+    <div class="panel">
+      <p class="eyebrow" data-i18n="eyebrow"></p>
+      <h1 data-i18n="breakTitle"></h1>
+      <p data-i18n="break1"></p>
+      <div class="actions"><button type="button" id="btn-break-continue" data-i18n="breakContinue"></button></div>
+    </div>
+  </section>
+
+  <!-- 4. Done -->
+  <section class="screen" id="s-done">
+    <div class="panel">
+      <p class="eyebrow" data-i18n="eyebrow"></p>
+      <h1 data-i18n="doneTitle"></h1>
+      <p class="status" id="send-status"></p>
+      <div class="row" style="gap:28px;align-items:flex-start">
+        <div>
+          <p data-i18n="subjectLabel" style="margin-bottom:2px"></p>
+          <div class="code" id="subject"></div>
+        </div>
+        <div>
+          <p data-i18n="codeLabel" style="margin-bottom:2px"></p>
+          <div class="code" id="code"></div>
+        </div>
+      </div>
+      <p data-i18n="done1"></p>
+      <div class="actions" style="justify-content:flex-start">
+        <button type="button" class="secondary" id="btn-csv" data-i18n="download"></button>
+        <button type="button" class="secondary" id="btn-restart" data-i18n="restart"></button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ============================================================
+   CONFIG — edit this block only
+   ============================================================ */
+const CONFIG = {
+  STUDY_ID: "water-pour-material-v1",
+  // Google Apps Script web-app URL (see README). Leave "" to disable
+  // online submission; participants then download a CSV at the end.
+  ENDPOINT_URL: "https://script.google.com/macros/s/AKfycbxoLd3dNLGMyFDHJ0TOZX1C6touRuWmhi9nZcXghCBO_5huChbB4n98xyyWrLq8CzcwSA/exec",
+  // Who sees the "Download data (CSV)" button on the last screen. It only matters when
+  // ENDPOINT_URL is set (offline, the button is always shown - it is the only copy of the data).
+  //   "on_failure" = hidden when the upload succeeded; shown only if it failed or could not be confirmed
+  //   "never"      = always hidden       "always" = always shown
+  CSV_DOWNLOAD: "on_failure",
+  // Show the "New participant" button on the last screen (for a tablet shared by several
+  // people). false = hidden; an online participant just closes the page.
+  SHOW_NEW_PARTICIPANT: false,
+  REPS: 4,                 // times each MAIN clip is presented (4 x 12 clips = 48 main trials)
+  BREAK_AT_FRACTION: 0.5,  // a break screen after this fraction of the main trials (0 = no break)
+  ISI_MS: 500,             // blank interval between trials
+  TRIAL_TIMEOUT_MS: 0,     // 0 = no time limit; counted from the start of the trial screen
+  // --- audio ---
+  // MAX_PLAYS: 0 = unlimited replays; 1 = each clip can be played once; etc.
+  MAX_PLAYS: 0,
+  // true = the answer buttons unlock only after the clip has played to the end once.
+  ENFORCE_LISTEN: true,
+  // --- response ---
+  // The four answer options. Each entry is a KEY; its on-screen label lives in I18N
+  // as "choice_<key>" (so "glass" -> choice_glass), one per language.
+  CHOICES: ["glass", "steel", "plastic", "paperboard"],
+  // Show the options in a new random order on EVERY trial (the order is logged in the
+  // choice_order column). false = always the order above.
+  RANDOMIZE_CHOICE_ORDER: true,
+  // --- stimuli ---
+  // `file` is a path relative to this HTML file (put the .wav files in an audio/ folder).
+  //   material  = the correct answer; must be one of CHOICES
+  //   shape     = logged in the "shape" column
+  //   audioPart = "full", "first" (first half) or "second" (second half); logged in "audioPart"
+  // MAIN: 4 recordings (all semiconical) x full/first/second = 12 clips. Each clip is
+  // presented REPS times; all trials are shuffled together (no blocks).
+  //   VID_20240211_193519_3.3_12.5 = glass        VID_20240211_203920_2.4_12.3 = steel
+  //   VID_20240331_160741_2.4_12.6 = plastic (pp) VID_20240403_233518_2.4_12.6 = paperboard
+  STIMULI: [
+    { name: "VID_20240211_193519_3.3_12.5", file: "audio/VID_20240211_193519_3.3_12.5.wav", material: "glass", shape: "semiconical", audioPart: "full" },
+    { name: "VID_20240211_193519_3.3_12.5_first", file: "audio/VID_20240211_193519_3.3_12.5_first.wav", material: "glass", shape: "semiconical", audioPart: "first" },
+    { name: "VID_20240211_193519_3.3_12.5_second", file: "audio/VID_20240211_193519_3.3_12.5_second.wav", material: "glass", shape: "semiconical", audioPart: "second" },
+    { name: "VID_20240211_203920_2.4_12.3_adjusted", file: "audio/VID_20240211_203920_2.4_12.3_adjusted.wav", material: "steel", shape: "semiconical", audioPart: "full" },
+    { name: "VID_20240211_203920_2.4_12.3_adjusted_first", file: "audio/VID_20240211_203920_2.4_12.3_adjusted_first.wav", material: "steel", shape: "semiconical", audioPart: "first" },
+    { name: "VID_20240211_203920_2.4_12.3_adjusted_second", file: "audio/VID_20240211_203920_2.4_12.3_adjusted_second.wav", material: "steel", shape: "semiconical", audioPart: "second" },
+    { name: "VID_20240331_160741_2.4_12.6", file: "audio/VID_20240331_160741_2.4_12.6.wav", material: "plastic", shape: "semiconical", audioPart: "full" },
+    { name: "VID_20240331_160741_2.4_12.6_first", file: "audio/VID_20240331_160741_2.4_12.6_first.wav", material: "plastic", shape: "semiconical", audioPart: "first" },
+    { name: "VID_20240331_160741_2.4_12.6_second", file: "audio/VID_20240331_160741_2.4_12.6_second.wav", material: "plastic", shape: "semiconical", audioPart: "second" },
+    { name: "VID_20240403_233518_2.4_12.6", file: "audio/VID_20240403_233518_2.4_12.6.wav", material: "paperboard", shape: "semiconical", audioPart: "full" },
+    { name: "VID_20240403_233518_2.4_12.6_first", file: "audio/VID_20240403_233518_2.4_12.6_first.wav", material: "paperboard", shape: "semiconical", audioPart: "first" },
+    { name: "VID_20240403_233518_2.4_12.6_second", file: "audio/VID_20240403_233518_2.4_12.6_second.wav", material: "paperboard", shape: "semiconical", audioPart: "second" }
+  ],
+  // PRACTICE: plastic, bottleneck-shaped recording; each part is presented once, in a
+  // random order, before the main trials. No feedback is shown. Set to [] for no practice.
+  PRACTICE: [
+    { name: "VID_20240412_000004_3.8_13.9", file: "audio/VID_20240412_000004_3.8_13.9.wav", material: "plastic", shape: "bottleneck", audioPart: "full" },
+    { name: "VID_20240412_000004_3.8_13.9_first", file: "audio/VID_20240412_000004_3.8_13.9_first.wav", material: "plastic", shape: "bottleneck", audioPart: "first" },
+    { name: "VID_20240412_000004_3.8_13.9_second", file: "audio/VID_20240412_000004_3.8_13.9_second.wav", material: "plastic", shape: "bottleneck", audioPart: "second" }
+  ],
+  // --- network ---
+  // Several tablets share ONE Apps Script lock, so what matters is the number of
+  // requests, not their size. Trials are therefore buffered and uploaded in
+  // batches: ~8 requests per participant instead of 30. A failed flush is retried
+  // a bounded number of times (BATCH_ATTEMPTS); if it still fails the rows go back
+  // into the buffer and leave with the next flush, so a bad moment costs at most a
+  // couple of extra requests and can never pile up. Retrying is safe ONLY because
+  // the Apps Script ignores a row whose session_id + trial it already holds -
+  // without that server-side check this would duplicate data.
+  NET: {
+    FLUSH_EVERY: 6,        // upload once this many rows are waiting (1 = per trial)
+    REGISTER_MS: 30000,    // background; the participant is reading meanwhile
+    BATCH_MS: 30000,       // background; nobody waits on these
+    FINISH_MS: 20000,
+    ATTEMPTS: 3,           // registration only
+    BATCH_ATTEMPTS: 3,     // mid-session batch: 1 try + 2 retries, 2 s then 4 s apart
+    FINISH_ATTEMPTS: 2,    // final batch: kept low so it still fits inside TAIL_MS
+    KEEPWARM_MS: 60000,    // ping the script this often so it does not go cold
+    START_WAIT_MS: 6000,   // extra wait at "start" if registration is slow
+    DRAIN_MS: 8000,        // cap on waiting for an in-flight flush at the end
+    TAIL_MS: 20000         // hard cap on the whole end-of-session send
+  }
+};
+
+/* ============================================================
+   Strings
+   ============================================================ */
+const I18N = {
+  ja: {
+    eyebrow: "［所属機関名］",
+    title: "水を注ぐ音の聞き取り調査",
+    consent1: "本調査は、水を容器に注ぐ音から、その容器が何の素材でできているかを判断する能力を調べる研究の一環として行われます。所要時間は約10分です。音声を聞き、4つの選択肢から1つを選んでお答えいただきます。ヘッドホンまたはイヤホンのご使用をおすすめします。",
+    consent2: "回答は匿名で扱われ、研究目的にのみ使用されます。参加は任意であり、いつでも中止できます。",
+    leaveWarning: "⚠ 終了する前にこのページを閉じたり再読み込みしたりすると、最初からやり直しになります。",
+    requiredNote: "以下のすべての項目にご回答ください（必須）。",
+    hearingLabel: "聴力についてお答えください",
+    hearingNormal: "問題ない（正常）",
+    hearingDifficulty: "聞こえにくさがある（片耳または両耳）",
+    hearingAid: "補聴器または人工内耳を使用している",
+    hearingNotSure: "わからない",
+    ageLabel: "年齢",
+    genderLabel: "性別",
+    genderMale: "男性",
+    genderFemale: "女性",
+    genderOther: "その他",
+    genderNoAnswer: "無回答",
+    consentCheck: "上記の説明を読み、調査への参加に同意します。",
+    instrTitle: "回答のしかた",
+    instr1: "各試行で、水を容器に注ぐ音が流れます。「再生」ボタンを押して、音を聞いてください。",
+    instr2: "その音から、容器が何の素材でできているかを、4つの選択肢から1つ選んでください。選択肢は、音を最後まで聞くと選べるようになります。「次へ」を押すまでは選び直せます。",
+    replayNote: "音は何度でも聞き直せます。",
+    replayLimited: "音は 1 試行につき最大 {n} 回まで再生できます。",
+    instr3: "正解・不正解を気にせず、聞いた印象でお答えください。",
+    start: "始める",
+    play: "▶ 再生",
+    replay: "▶ もう一度再生",
+    playing: "再生中…",
+    listenFirst: "まず音を最後まで聞いてください",
+    chooseOne: "ひとつ選んでください",
+    audioError: "音声を再生できませんでした。スタッフにお知らせください。",
+    question: "この容器は何の素材でできていますか？",
+    choice_steel: "スチール",
+    choice_glass: "ガラス",
+    choice_paperboard: "紙",
+    choice_plastic: "プラスチック",
+    next: "次へ",
+    counterPractice: "練習 {i} / {n}",
+    volumeNote: "練習の間に、音量を聞きやすい大きさに調整してください。",
+    instrPractice: "最初に3回の練習試行があります。練習のあと、本番が始まります。練習の間に、音量を聞きやすい大きさに調整してください。本番の途中で、休憩が入ります。",
+    mainIntroTitle: "練習は終わりです",
+    mainIntro1: "これから本番が始まります。練習と同じように、音を聞いて、容器の素材を選んでください。",
+    breakTitle: "少し休憩しましょう",
+    break1: "半分が終わりました。準備ができたら、下のボタンを押して続けてください。",
+    breakContinue: "続ける",
+    counter: "{i} / {n}",
+    doneTitle: "ご協力ありがとうございました",
+    sending: "回答を送信しています。少々お待ちください…",
+    sent: "回答が正常に送信されました。ご参加ありがとうございました。",
+    sentUnconfirmed: "回答を送信しました（受信の確認はできませんでした）。念のため下のボタンからデータを保存しておいてください。",
+    sentNoCode: "回答はすべて送信されました。被験者コードのみ取得できませんでしたが、データは記録されています。",
+    failed: "送信に失敗しました。下のボタンからデータをダウンロードし、研究者にお送りください。",
+    offline: "オンライン送信は設定されていません。下のボタンからデータをダウンロードし、研究者にお送りください。",
+    codeLabel: "完了コード",
+    subjectLabel: "被験者コード",
+    preparing: "準備中…",
+    partial: "一部のデータの送信に失敗しました。スタッフにお知らせください。",
+    done1: "",
+    download: "データをダウンロード（CSV）",
+    restart: "次の参加者を開始"
+  },
+  en: {
+    eyebrow: "[Institution name]",
+    title: "Water Pouring Sound Listening Survey",
+    consent1: "This survey is part of a study on how well people can tell, from the sound of water being poured, what material a container is made of. It takes about 10 minutes. You will listen to audio clips and choose one answer from four options. We recommend using headphones or earphones.",
+    consent2: "Responses are anonymous and used only for research. Participation is voluntary; you may stop at any time.",
+    leaveWarning: "⚠ If you close or reload this page before finishing, you will have to start over from the beginning.",
+    requiredNote: "All questions below are required.",
+    hearingLabel: "How would you describe your hearing?",
+    hearingNormal: "Normal",
+    hearingDifficulty: "Some difficulty hearing (one or both ears)",
+    hearingAid: "I use a hearing aid or cochlear implant",
+    hearingNotSure: "Not sure",
+    ageLabel: "Age",
+    genderLabel: "Gender",
+    genderMale: "Male",
+    genderFemale: "Female",
+    genderOther: "Other",
+    genderNoAnswer: "Prefer not to answer",
+    consentCheck: "I have read the information above and agree to take part.",
+    instrTitle: "How to respond",
+    instr1: "On each trial you will hear the sound of water being poured into a container. Press the \"Play\" button to listen.",
+    instr2: "Based on the sound, choose which of the four materials you think the container is made of. The options unlock once you have heard the clip to the end. You can change your choice until you press \"Next\".",
+    replayNote: "You can listen to the sound as many times as you like.",
+    replayLimited: "You can play each sound up to {n} time(s) per trial.",
+    instr3: "There are no right or wrong answers to worry about; go with your impression. ",
+    start: "Start",
+    play: "▶ Play",
+    replay: "▶ Play again",
+    playing: "Playing…",
+    listenFirst: "Please listen to the whole sound first",
+    chooseOne: "Choose one",
+    audioError: "The sound could not be played. Please tell the researcher.",
+    question: "What material is this container made of?",
+    choice_steel: "Steel",
+    choice_glass: "Glass",
+    choice_paperboard: "Paperboard",
+    choice_plastic: "Plastic",
+    next: "Next",
+    counterPractice: "Practice {i} / {n}",
+    volumeNote: "Please use these practice trials to adjust the volume to a comfortable level.",
+    instrPractice: "There are 3 practice trials first, then the main trials begin. Please use the practice trials to adjust the volume to a comfortable level. You will get a break halfway through the main trials.",
+    mainIntroTitle: "Practice finished",
+    mainIntro1: "The main trials start now. As in the practice, listen to each sound and choose the material of the container.",
+    breakTitle: "Time for a short break",
+    break1: "You are halfway through. Press the button below when you are ready to continue.",
+    breakContinue: "Continue",
+    counter: "{i} / {n}",
+    doneTitle: "Thank you for taking part",
+    sending: "Sending your responses \u2014 please wait\u2026",
+    sent: "Your responses were sent successfully. Thank you for taking part.",
+    sentUnconfirmed: "Your responses were sent, but receipt could not be confirmed. Please also save a copy with the button below.",
+    sentNoCode: "All responses were received. Only the subject code could not be obtained; the data itself is recorded.",
+    failed: "Sending failed. Please download your data with the button below and send it to the researcher.",
+    offline: "Online submission is not configured. Please download your data with the button below and send it to the researcher.",
+    codeLabel: "Completion code",
+    subjectLabel: "Subject code",
+    preparing: "Preparing…",
+    partial: "Some responses could not be sent. Please let the researcher know.",
+    done1: "",
+    download: "Download data (CSV)",
+    restart: "New participant"
+  }
+};
+
+/* ============================================================
+   State
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+let lang = "en";
+let T = I18N.en;
+const session = {
+  id: makeId(),
+  subject: "",       // assigned by the sheet at registration (S001, S002, …)
+  pid: "",           // auto-generated below (not typed by the participant)
+  age: "",
+  gender: "",
+  hearing: "",
+  sendErrors: [],    // short log of why uploads failed, for diagnosis
+  startedAt: new Date().toISOString(),
+  device: null,
+  rows: []
+};
+session.pid = "P" + session.id;   // auto-generated participant id
+
+let trials = [];       // sequence of {stim, rep}
+let idx = 0;
+let cur = null;        // current trial timing/response
+let choiceOrder = [];  // order of the answer buttons on the current trial
+const buffer = [];     // rows waiting to be uploaded
+const pending = [];    // in-flight flushes
+let sendFailures = 0;
+let registerPromise = null;
+let flushing = false;
+let trialTimer = null;
+
+// audio
+const audio = new Audio();
+audio.preload = "auto";
+let playing = false;
+let audioFailed = false;
+
+function makeId() {
+  const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  const buf = new Uint8Array(8);
+  (window.crypto || {}).getRandomValues ? crypto.getRandomValues(buf) : buf.forEach((_, i) => buf[i] = Math.random() * 256);
+  for (const b of buf) s += a[b % a.length];
+  return s;
+}
+function fmt(s, vars) { return s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? ""); }
+
+// Catch config typos early (visible in the browser console).
+CONFIG.STIMULI.concat(CONFIG.PRACTICE).forEach(s => {
+  if (!CONFIG.CHOICES.includes(s.material)) console.warn("Stimulus " + s.name + ": material '" + s.material + "' is not in CHOICES");
+});
+
+/* ---------- i18n ---------- */
+const LANG_LABELS = { ja: "JA", en: "EN" };
+function renderInstrNote() {
+  $("instr-note").textContent = CONFIG.MAX_PLAYS > 0
+    ? fmt(T.replayLimited, { n: CONFIG.MAX_PLAYS })
+    : T.replayNote;
+}
+function applyLang(code) {
+  lang = code;
+  T = I18N[code];
+  document.documentElement.lang = code;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.dataset.i18n;
+    if (key in T) el.textContent = T[key];
+  });
+  $("lang-switch-label").textContent = LANG_LABELS[code] || code;
+  document.querySelectorAll("#lang-menu button").forEach(b => {
+    b.toggleAttribute("aria-current", b.dataset.lang === code);
+  });
+  renderInstrNote();
+  // re-render dynamic text that isn't driven by data-i18n
+  if ($("s-trial").classList.contains("active")) { updateCounterText(); renderChoices(); updatePlayUi(); }
+  if ($("s-done").classList.contains("active") && lastStatusKey) $("send-status").textContent = T[lastStatusKey];
+}
+
+/* ---------- navigation ---------- */
+function show(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === id));
+  $("lang-switcher").style.display = (id === "s-lang") ? "none" : "block";
+  // Leave-warning banner: from the consent page until the thank-you page.
+  $("leave-warning").hidden = (id === "s-lang" || id === "s-done");
+  $("lang-menu").hidden = true;
+  $("lang-switch-btn").setAttribute("aria-expanded", "false");
+  window.scrollTo(0, 0);
+}
+
+/* ---------- sequence ---------- */
+function buildSequence() {
+  // Practice first (once each, in random order), then the main trials: REPS x clips,
+  // all pooled and shuffled together (no blocks), re-shuffled until the same clip never
+  // plays twice in a row. `rep` = n-th presentation of that clip to this participant.
+  const practice = shuffle(CONFIG.PRACTICE.slice()).map((stim, i) =>
+    ({ stim, rep: 1, phase: "practice", phaseIdx: i + 1, phaseN: CONFIG.PRACTICE.length }));
+  const pool = [];
+  for (let r = 1; r <= CONFIG.REPS; r++) CONFIG.STIMULI.forEach(s => pool.push({ stim: s }));
+  let seq, ok, tries = 0;
+  do {
+    seq = shuffle(pool.slice());
+    ok = true;
+    for (let i = 1; i < seq.length; i++) {
+      if (seq[i].stim.name === seq[i - 1].stim.name) { ok = false; break; }
+    }
+  } while (!ok && ++tries < 1000);
+  const seen = {};
+  seq.forEach((t, i) => {
+    seen[t.stim.name] = (seen[t.stim.name] || 0) + 1;
+    t.rep = seen[t.stim.name]; t.phase = "main"; t.phaseIdx = i + 1; t.phaseN = seq.length;
+  });
+  return practice.concat(seq);
+}
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ---------- device info ---------- */
+function deviceInfo() {
+  const mm = (q) => (window.matchMedia && window.matchMedia(q).matches) ? 1 : 0;
+  return {
+    screen_w: screen.width, screen_h: screen.height,
+    viewport_w: window.innerWidth, viewport_h: window.innerHeight,
+    dpr: window.devicePixelRatio || 1,
+    touch: ("ontouchstart" in window) ? 1 : 0,
+    user_agent: navigator.userAgent,
+    tz: (Intl.DateTimeFormat().resolvedOptions().timeZone) || ""
+  };
+}
+
+/* ---------- audio + response UI ---------- */
+function choiceEnabled() {
+  return !!cur && (!CONFIG.ENFORCE_LISTEN || cur.listened);
+}
+function renderChoices() {
+  const box = $("choices");
+  box.textContent = "";
+  choiceOrder.forEach(key => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "choice";
+    b.dataset.key = key;
+    b.setAttribute("role", "radio");
+    b.textContent = T["choice_" + key] || key;
+    box.appendChild(b);
+  });
+  refreshChoices();
+}
+function refreshChoices() {
+  const on = choiceEnabled();
+  $("choices").querySelectorAll(".choice").forEach(b => {
+    b.disabled = !on;
+    b.setAttribute("aria-checked", (cur && cur.choice === b.dataset.key) ? "true" : "false");
+  });
+}
+function updatePlayUi() {
+  const b = $("btn-play");
+  const limit = !!cur && CONFIG.MAX_PLAYS > 0 && cur.nPlays >= CONFIG.MAX_PLAYS;
+  b.disabled = !cur || playing || limit || cur.audioError === 1;
+  b.textContent = playing ? T.playing : ((cur && cur.nPlays > 0) ? T.replay : T.play);
+  let hint = "";
+  if (cur && cur.audioError) hint = T.audioError;
+  else if (cur && CONFIG.ENFORCE_LISTEN && !cur.listened) hint = T.listenFirst;
+  else if (cur) hint = T.chooseOne;
+  $("listen-hint").textContent = hint;
+}
+function selectChoice(key) {
+  if (!choiceEnabled() || cur.choice === key) return;
+  cur.choice = key;
+  cur.nChanges++;
+  if (cur.rtFirst == null) {
+    const now = performance.now();
+    cur.rtFirst = Math.round(now - cur.onset);
+    if (cur.tEnd != null) cur.rtAfterAudio = Math.round(now - cur.tEnd);
+  }
+  refreshChoices();
+  $("btn-next").disabled = false;
+}
+$("choices").addEventListener("click", (e) => {
+  const b = e.target.closest(".choice");
+  if (b && !b.disabled) selectChoice(b.dataset.key);
+});
+function onAudioFail() {
+  audioFailed = true;
+  playing = false;
+  if (cur) {
+    cur.audioError = 1;
+    cur.listened = true;      // never trap a participant behind a broken clip
+    refreshChoices();
+  }
+  updatePlayUi();
+}
+audio.addEventListener("ended", () => {
+  playing = false;
+  if (cur && !cur.listened) { cur.listened = true; cur.tEnd = performance.now(); }
+  refreshChoices();
+  updatePlayUi();
+});
+audio.addEventListener("error", onAudioFail);
+$("btn-play").addEventListener("click", () => {
+  if (!cur || playing || cur.audioError) return;
+  if (CONFIG.MAX_PLAYS > 0 && cur.nPlays >= CONFIG.MAX_PLAYS) return;
+  cur.nPlays++;
+  if (cur.rtPlay == null) cur.rtPlay = Math.round(performance.now() - cur.onset);
+  playing = true;
+  try { audio.currentTime = 0; } catch (e) {}
+  updatePlayUi();
+  const p = audio.play();
+  if (p && p.catch) p.catch(() => onAudioFail());
+});
+
+/* ---------- trials ---------- */
+function updateCounterText() {
+  if (!trials.length || idx >= trials.length) return;
+  const t = trials[idx];
+  $("counter").textContent = fmt(t.phase === "practice" ? T.counterPractice : T.counter,
+                                 { i: t.phaseIdx, n: t.phaseN });
+  // During practice, remind participants to use these trials to set the volume.
+  $("practice-note").textContent = T.volumeNote;
+  $("practice-note").hidden = t.phase !== "practice";
+}
+function startTrial() {
+  const t = trials[idx];
+  // a fresh random order of the answer buttons on every trial
+  choiceOrder = CONFIG.CHOICES.slice();
+  if (CONFIG.RANDOMIZE_CHOICE_ORDER) shuffle(choiceOrder);
+  updateCounterText();
+  $("btn-next").disabled = true;
+  cur = null;
+  playing = false;
+  audioFailed = false;
+  audio.pause();
+  audio.src = t.stim.file;
+  audio.load();
+  renderChoices();
+  updatePlayUi();
+  show("s-trial");
+  setTimeout(() => {
+    cur = {
+      onset: performance.now(),
+      choice: null, rtFirst: null, rtPlay: null, rtAfterAudio: null,
+      nChanges: 0, nPlays: 0, listened: false, tEnd: null,
+      timedOut: 0, audioError: audioFailed ? 1 : 0
+    };
+    if (cur.audioError) cur.listened = true;
+    refreshChoices();
+    updatePlayUi();
+    if (CONFIG.TRIAL_TIMEOUT_MS > 0) {
+      trialTimer = setTimeout(() => { if (cur) { cur.timedOut = 1; endTrial(); } }, CONFIG.TRIAL_TIMEOUT_MS);
+    }
+  }, CONFIG.ISI_MS);
+}
+function endTrial() {
+  clearTimeout(trialTimer); trialTimer = null;
+  audio.pause();
+  playing = false;
+  const t = trials[idx];
+  const s = t.stim;
+  const ch = cur.choice == null ? "" : cur.choice;
+  session.rows.push({
+    study_id: CONFIG.STUDY_ID,
+    session_id: session.id,
+    subject_code: session.subject,
+    participant_id: session.pid,
+    age: session.age,
+    gender: session.gender,
+    hearing: session.hearing,
+    lang,
+    trial: idx + 1,
+    trial_type: t.phase,
+    trial_in_phase: t.phaseIdx,
+    rep: t.rep,
+    stimulus: s.name,
+    audio_file: s.file,
+    true_material: s.material,
+    shape: s.shape,
+    audioPart: s.audioPart,
+    choice: ch,
+    correct: ch === "" ? "" : (ch === s.material ? 1 : 0),
+    choice_order: choiceOrder.join("|"),
+    n_plays: cur.nPlays,
+    audio_error: cur.audioError,
+    timed_out: cur.timedOut,
+    rt_play_ms: cur.rtPlay == null ? "" : cur.rtPlay,
+    rt_first_ms: cur.rtFirst == null ? "" : cur.rtFirst,
+    rt_after_audio_ms: cur.rtAfterAudio == null ? "" : cur.rtAfterAudio,
+    rt_submit_ms: Math.round(performance.now() - cur.onset),
+    n_adjust: cur.nChanges,
+    timestamp: new Date().toISOString(),
+    ...session.device
+  });
+  sendTrial(session.rows[session.rows.length - 1]);
+  idx++;
+  if (idx >= trials.length) { finish(); return; }
+  const prev = trials[idx - 1], nxt = trials[idx];
+  if (prev.phase === "practice" && nxt.phase === "main") { show("s-main-intro"); return; }
+  const breakAfter = Math.floor(nxt.phaseN * CONFIG.BREAK_AT_FRACTION);
+  if (nxt.phase === "main" && CONFIG.BREAK_AT_FRACTION > 0 && nxt.phaseIdx === breakAfter + 1) { show("s-break"); return; }
+  startTrial();
+}
+
+/* ---------- network ----------
+   Timeouts are generous because only registration is ever waited on, and that
+   runs in the background while the participant reads. When a reply is slow the
+   page gives up and re-sends even though the write may have succeeded; the
+   Apps Script skips any row whose session_id + trial it already holds, and
+   returns the existing subject code for a repeated registration, so re-sending
+   is always safe. NEEDS the 2026-09 Code.gs - redeploy after updating it. */
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+async function post(payload, timeoutMs) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs || CONFIG.NET.TRIAL_MS);
+  try {
+    const res = await fetch(CONFIG.ENDPOINT_URL, {
+      method: "POST", body: JSON.stringify(payload),
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, signal: ctrl.signal
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } finally { clearTimeout(timer); }
+}
+async function postRetry(payload, timeoutMs, attempts) {
+  const n = attempts || CONFIG.NET.ATTEMPTS;
+  let last = "";
+  for (let i = 0; i < n; i++) {
+    if (i) await sleep(i * 2000);
+    try {
+      const j = await post(payload, timeoutMs);
+      if (j && j.ok) return j;
+      last = (j && j.error) ? String(j.error) : "bad reply";
+    } catch (e) {
+      last = (e && e.name === "AbortError") ? "timeout" : String((e && e.message) || e);
+    }
+  }
+  noteError(payload.action + ":" + last);
+  return null;
+}
+// Repeated identical failures are collapsed to "reason x N" so the note stays short.
+function noteError(msg) {
+  const hit = session.sendErrors.find(e => e.msg === msg);
+  if (hit) hit.n++;
+  else if (session.sendErrors.length < 6) session.sendErrors.push({ msg, n: 1 });
+}
+function errorSummary() {
+  return session.sendErrors.map(e => e.n > 1 ? `${e.msg} \u00D7${e.n}` : e.msg).join(" / ");
+}
+// Wake the Apps Script instance early, so the first real POST is not a cold start.
+let warmed = false;
+function ping() {
+  fetch(CONFIG.ENDPOINT_URL, { method: "GET", cache: "no-store" }).catch(() => {});
+}
+function warmUp() {
+  if (warmed || !CONFIG.ENDPOINT_URL) return;
+  warmed = true;
+  ping();
+}
+// Keep-warm: a GET every minute keeps the Apps Script instance awake. It only
+// reads a constant and never touches the spreadsheet or the lock.
+let warmTimer = null;
+function startKeepWarm() {
+  if (warmTimer || !CONFIG.ENDPOINT_URL) return;
+  warmTimer = setInterval(() => {
+    if (document.visibilityState === "visible") ping();
+  }, CONFIG.NET.KEEPWARM_MS || 60000);
+}
+function stopKeepWarm() {
+  if (warmTimer) { clearInterval(warmTimer); warmTimer = null; }
+}
+function register() {
+  if (!CONFIG.ENDPOINT_URL) return Promise.resolve();
+  return postRetry({ action: "register", study_id: CONFIG.STUDY_ID, session_id: session.id,
+                     participant_id: session.pid, age: session.age, gender: session.gender, hearing: session.hearing,
+                     lang, device: session.device }, CONFIG.NET.REGISTER_MS)
+    .then(j => { if (j && j.subject_code) session.subject = j.subject_code; });
+}
+// Queue a finished trial. Nothing is sent until the buffer is full enough, or
+// the end of the session calls flush().
+function sendTrial(row) {
+  if (!CONFIG.ENDPOINT_URL) return;
+  buffer.push(row);
+  if (buffer.length >= (CONFIG.NET.FLUSH_EVERY || 6)) flush();
+}
+// Upload everything currently buffered as ONE request, retrying a bounded number
+// of times. If every attempt fails the rows are put back and go out with the next
+// flush, so a bad moment never multiplies without limit. Only one flush is ever in
+// flight, so while a flush is retrying new rows simply accumulate in the buffer
+// and leave together afterwards.
+// force=true skips the one-at-a-time guard. Used only for the final flush: the
+// rows are disjoint from whatever is already in flight, and the Apps Script
+// ignores anything it already holds, so overlapping writes are harmless and
+// this saves waiting out an in-flight request at the end.
+function flush(attempts, force) {
+  if (!CONFIG.ENDPOINT_URL || (flushing && !force) || !buffer.length) return Promise.resolve(true);
+  flushing = true;
+  const rows = buffer.splice(0, buffer.length);
+  const cols = Object.keys(rows[0]);
+  const p = postRetry({ action: "batch", columns: cols, rows: rows.map(r => cols.map(k => r[k])) },
+                      CONFIG.NET.BATCH_MS, attempts || CONFIG.NET.BATCH_ATTEMPTS || 1)
+    .then(j => {
+      if (!j) { buffer.unshift.apply(buffer, rows); return false; }
+      return true;
+    })
+    .catch(() => { buffer.unshift.apply(buffer, rows); return false; })
+    .finally(() => { flushing = false; });
+  pending.push(p);
+  return p;
+}
+// Keep the screen awake: a sleeping phone suspends in-flight uploads.
+let wakeLock = null;
+async function keepAwake() {
+  try { if (navigator.wakeLock) wakeLock = await navigator.wakeLock.request("screen"); }
+  catch (e) { /* not supported, or denied */ }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && wakeLock === null) keepAwake();
+});
+
+/* ---------- finish + submit ---------- */
+function columns() { return Object.keys(session.rows[0] || {}); }
+function toCsv() {
+  const cols = columns();
+  const esc = (v) => {
+    const s = v == null ? "" : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  return [cols.join(","), ...session.rows.map(r => cols.map(k => esc(r[k])).join(","))].join("\n");
+}
+let lastStatusKey = null;
+function csvVisible(key) {
+  if (!CONFIG.ENDPOINT_URL || CONFIG.CSV_DOWNLOAD === "always") return true;
+  if (CONFIG.CSV_DOWNLOAD === "never") return false;
+  return key === "failed" || key === "partial" || key === "sentUnconfirmed" || key === "offline";
+}
+function setStatus(key) {
+  lastStatusKey = key;
+  $("send-status").textContent = T[key];
+  $("btn-csv").hidden = !csvVisible(key);
+}
+// The thank-you screen appears at once; uploading continues behind it. The
+// participant never waits on the network. "Next participant" stays disabled
+// until the upload settles, because restarting would discard anything unsent.
+async function finish() {
+  show("s-done");
+  $("code").textContent = session.subject ? `${session.subject}-${session.id}` : session.id;
+  $("subject").textContent = session.subject || "—";
+  if (!CONFIG.ENDPOINT_URL) { setStatus("offline"); return; }
+  setStatus("sending");
+  $("btn-restart").disabled = true;
+
+  const tail = (async () => {
+    // The finish record touches a different tab and depends on nothing here, so
+    // it goes out straight away rather than queueing behind the last batch.
+    const finishCall = postRetry({ action: "finish", session_id: session.id,
+                                   n_trials: session.rows.length,
+                                   send_errors: errorSummary() },
+                                 CONFIG.NET.FINISH_MS, 2);
+    const lastBatch = buffer.length
+      ? flush(CONFIG.NET.FINISH_ATTEMPTS || 2, true) : Promise.resolve(true);
+    const [, , fin] = await Promise.all([
+      Promise.race([Promise.all(pending), sleep(CONFIG.NET.DRAIN_MS)]),
+      lastBatch, finishCall]);
+    sendFailures = buffer.length;
+    return !!fin;
+  })();
+
+  const applyStatus = (finished) => {
+    if (sendFailures > 0) setStatus("partial");
+    else if (!session.subject) setStatus("sentNoCode");
+    else setStatus(finished ? "sent" : "sentUnconfirmed");
+    showSendErrors();
+    $("btn-restart").disabled = false;
+    stopKeepWarm();   // the session is over; nothing left to keep the script warm for
+    if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
+  };
+  // On a very bad connection the tail could take minutes; cap it, show a
+  // result, and correct the message later if it does get through.
+  const r = await Promise.race([tail, sleep(CONFIG.NET.TAIL_MS).then(() => "cap")]);
+  if (r === "cap") {
+    setStatus("partial"); showSendErrors();
+    $("btn-restart").disabled = false;
+    tail.then(applyStatus);
+  } else applyStatus(r);
+}
+function showSendErrors() {
+  if (!session.sendErrors.length) return;
+  let d = $("send-errors");
+  if (!d) {
+    d = document.createElement("p");
+    d.id = "send-errors";
+    d.style.cssText = "font-family:var(--mono);font-size:11px;opacity:.55;margin-top:10px";
+    $("send-status").parentNode.appendChild(d);
+  }
+  d.textContent = errorSummary();
+}
+$("btn-csv").addEventListener("click", () => {
+  const blob = new Blob(["\uFEFF" + toCsv()], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${CONFIG.STUDY_ID}_${session.pid || "anon"}_${session.id}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+});
+
+/* ---------- wiring ---------- */
+document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => {
+  applyLang(b.dataset.lang);
+  warmUp();          // wake the Apps Script while the consent form is being read
+  show("s-consent");
+}));
+
+/* Persistent language switcher: lets the participant change language mid-experiment */
+$("lang-switch-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const open = $("lang-menu").hidden;
+  $("lang-menu").hidden = !open;
+  $("lang-switch-btn").setAttribute("aria-expanded", String(open));
+});
+document.querySelectorAll("#lang-menu button").forEach(b => b.addEventListener("click", () => {
+  applyLang(b.dataset.lang);
+  $("lang-menu").hidden = true;
+  $("lang-switch-btn").setAttribute("aria-expanded", "false");
+}));
+document.addEventListener("click", (e) => {
+  if (!$("lang-switcher").contains(e.target)) {
+    $("lang-menu").hidden = true;
+    $("lang-switch-btn").setAttribute("aria-expanded", "false");
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    $("lang-menu").hidden = true;
+    $("lang-switch-btn").setAttribute("aria-expanded", "false");
+  }
+});
+
+// Every demographic question (age, gender, hearing) and the consent tick are required.
+function ageValue() {
+  const v = $("age").value.trim();
+  const n = Number(v);
+  return (v !== "" && Number.isInteger(n) && n >= 1 && n <= 120) ? String(n) : "";
+}
+function allAnswered() {
+  return ageValue() !== ""
+    && !!document.querySelector('input[name="gender"]:checked')
+    && !!document.querySelector('input[name="hearing"]:checked')
+    && $("consent").checked;
+}
+function updateConsentGate() { $("btn-consent").disabled = !allAnswered(); }
+$("consent").addEventListener("change", updateConsentGate);
+$("age").addEventListener("input", updateConsentGate);
+document.querySelectorAll('input[name="gender"], input[name="hearing"]').forEach(r => r.addEventListener("change", updateConsentGate));
+$("btn-consent").addEventListener("click", () => {
+  if (!allAnswered()) return;
+  session.age = ageValue();
+  session.gender = (document.querySelector('input[name="gender"]:checked') || {}).value || "";
+  session.hearing = (document.querySelector('input[name="hearing"]:checked') || {}).value || "";
+  // Register now, in the background, while the participant reads the
+  // instructions. By the time they press "start" the code is normally
+  // already in hand, so nobody waits on a cold start.
+  session.device = deviceInfo();
+  trials = buildSequence();
+  idx = 0;
+  registerPromise = register();
+  keepAwake();
+  startKeepWarm();
+  show("s-instr");
+});
+$("btn-start").addEventListener("click", async () => {
+  const btn = $("btn-start");
+  if (registerPromise && !session.subject) {
+    btn.disabled = true;
+    btn.textContent = T.preparing;
+    // Registration is usually finished already; if not, give it a little longer
+    // and then start anyway. session_id still links every row.
+    await Promise.race([registerPromise, sleep(CONFIG.NET.START_WAIT_MS)]);
+    btn.disabled = false;
+    btn.textContent = T.start;
+  }
+  startTrial();
+});
+$("btn-main-start").addEventListener("click", startTrial);
+$("btn-break-continue").addEventListener("click", startTrial);
+$("btn-restart").hidden = !CONFIG.SHOW_NEW_PARTICIPANT;
+$("btn-restart").addEventListener("click", () => location.reload());
+$("btn-next").addEventListener("click", () => { if (cur && cur.choice != null) endTrial(); });
+</script>
+
+</body>
+</html>
