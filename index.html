@@ -373,7 +373,7 @@
    CONFIG — edit this block only
    ============================================================ */
 const CONFIG = {
-  STUDY_ID: "water-pour-material-v1",
+  STUDY_ID: "water-pour-material-v2",
   // Google Apps Script web-app URL (see README). Leave "" to disable
   // online submission; participants then download a CSV at the end.
   ENDPOINT_URL: "https://script.google.com/macros/s/AKfycbxoLd3dNLGMyFDHJ0TOZX1C6touRuWmhi9nZcXghCBO_5huChbB4n98xyyWrLq8CzcwSA/exec",
@@ -385,7 +385,7 @@ const CONFIG = {
   // Show the "New participant" button on the last screen (for a tablet shared by several
   // people). false = hidden; an online participant just closes the page.
   SHOW_NEW_PARTICIPANT: false,
-  REPS: 4,                 // times each MAIN clip is presented (4 x 12 clips = 48 main trials)
+  REPS: 1,                 // times each MAIN clip is presented (1 x 36 clips = 36 main trials)
   BREAK_AT_FRACTION: 0.5,  // a break screen after this fraction of the main trials (0 = no break)
   ISI_MS: 500,             // blank interval between trials
   TRIAL_TIMEOUT_MS: 0,     // 0 = no time limit; counted from the start of the trial screen
@@ -404,32 +404,61 @@ const CONFIG = {
   // --- stimuli ---
   // `file` is a path relative to this HTML file (put the .wav files in an audio/ folder).
   //   material  = the correct answer; must be one of CHOICES
-  //   shape     = logged in the "shape" column
+  //   shape     = logged in the "shape" column (cylindrical / semiconical / bottleneck)
   //   audioPart = "full", "first" (first half) or "second" (second half); logged in "audioPart"
-  // MAIN: 4 recordings (all semiconical) x full/first/second = 12 clips. Each clip is
-  // presented REPS times; all trials are shuffled together (no blocks).
-  //   VID_20240211_193519_3.3_12.5 = glass        VID_20240211_203920_2.4_12.3 = steel
-  //   VID_20240331_160741_2.4_12.6 = plastic (pp) VID_20240403_233518_2.4_12.6 = paperboard
+  //   containerId, setting = logged in the "container_id" and "setting" columns (from the stimulus table)
+  //   totalDuration = duration in seconds of the WHOLE recording (same for its full/first/second clips);
+  //               logged in the "total_duration" column
+  // MAIN: 12 recordings (3 per material) x full/first/second = 36 clips. Each clip is
+  // presented once (REPS = 1); all trials are shuffled together (no blocks).
+  //   glass:      VID_20240417_000106 (cyl.)  VID_20240211_192516 (cyl.)  VID_20240403_235516 (cyl.)
+  //   paperboard: VID_20240411_235647 (semi.) VID_20240323_001443 (cyl.)  VID_20240403_233343 (semi.)
+  //   plastic:    VID_20240412_000004 (bottle.) VID_20240405_220856 (bottle.) VID_20240122_001042 (cyl.)
+  //   steel:      VID_20240405_220057 (cyl.)  VID_20240211_193633 (bottle.) VID_20240211_203945 (semi.)
   STIMULI: [
-    { name: "VID_20240211_193519_3.3_12.5", file: "audio/VID_20240211_193519_3.3_12.5.wav", material: "glass", shape: "semiconical", audioPart: "full" },
-    { name: "VID_20240211_193519_3.3_12.5_first", file: "audio/VID_20240211_193519_3.3_12.5_first.wav", material: "glass", shape: "semiconical", audioPart: "first" },
-    { name: "VID_20240211_193519_3.3_12.5_second", file: "audio/VID_20240211_193519_3.3_12.5_second.wav", material: "glass", shape: "semiconical", audioPart: "second" },
-    { name: "VID_20240211_203920_2.4_12.3_adjusted", file: "audio/VID_20240211_203920_2.4_12.3_adjusted.wav", material: "steel", shape: "semiconical", audioPart: "full" },
-    { name: "VID_20240211_203920_2.4_12.3_adjusted_first", file: "audio/VID_20240211_203920_2.4_12.3_adjusted_first.wav", material: "steel", shape: "semiconical", audioPart: "first" },
-    { name: "VID_20240211_203920_2.4_12.3_adjusted_second", file: "audio/VID_20240211_203920_2.4_12.3_adjusted_second.wav", material: "steel", shape: "semiconical", audioPart: "second" },
-    { name: "VID_20240331_160741_2.4_12.6", file: "audio/VID_20240331_160741_2.4_12.6.wav", material: "plastic", shape: "semiconical", audioPart: "full" },
-    { name: "VID_20240331_160741_2.4_12.6_first", file: "audio/VID_20240331_160741_2.4_12.6_first.wav", material: "plastic", shape: "semiconical", audioPart: "first" },
-    { name: "VID_20240331_160741_2.4_12.6_second", file: "audio/VID_20240331_160741_2.4_12.6_second.wav", material: "plastic", shape: "semiconical", audioPart: "second" },
-    { name: "VID_20240403_233518_2.4_12.6", file: "audio/VID_20240403_233518_2.4_12.6.wav", material: "paperboard", shape: "semiconical", audioPart: "full" },
-    { name: "VID_20240403_233518_2.4_12.6_first", file: "audio/VID_20240403_233518_2.4_12.6_first.wav", material: "paperboard", shape: "semiconical", audioPart: "first" },
-    { name: "VID_20240403_233518_2.4_12.6_second", file: "audio/VID_20240403_233518_2.4_12.6_second.wav", material: "paperboard", shape: "semiconical", audioPart: "second" }
+    { name: "VID_20240417_000106_2.7_13.2", file: "audio/VID_20240417_000106_2.7_13.2.wav", material: "glass", shape: "cylindrical", audioPart: "full", containerId: 24, setting: "Ws-kitchen", totalDuration: 10.49118 },
+    { name: "VID_20240417_000106_2.7_13.2_first", file: "audio/VID_20240417_000106_2.7_13.2_first.wav", material: "glass", shape: "cylindrical", audioPart: "first", containerId: 24, setting: "Ws-kitchen", totalDuration: 10.49118 },
+    { name: "VID_20240417_000106_2.7_13.2_second", file: "audio/VID_20240417_000106_2.7_13.2_second.wav", material: "glass", shape: "cylindrical", audioPart: "second", containerId: 24, setting: "Ws-kitchen", totalDuration: 10.49118 },
+    { name: "VID_20240211_192516_2.4_12.8", file: "audio/VID_20240211_192516_2.4_12.8.wav", material: "glass", shape: "cylindrical", audioPart: "full", containerId: 3, setting: "Vgg-mrcr", totalDuration: 10.44459 },
+    { name: "VID_20240211_192516_2.4_12.8_first", file: "audio/VID_20240211_192516_2.4_12.8_first.wav", material: "glass", shape: "cylindrical", audioPart: "first", containerId: 3, setting: "Vgg-mrcr", totalDuration: 10.44459 },
+    { name: "VID_20240211_192516_2.4_12.8_second", file: "audio/VID_20240211_192516_2.4_12.8_second.wav", material: "glass", shape: "cylindrical", audioPart: "second", containerId: 3, setting: "Vgg-mrcr", totalDuration: 10.44459 },
+    { name: "VID_20240403_235516_2.6_12.9", file: "audio/VID_20240403_235516_2.6_12.9.wav", material: "glass", shape: "cylindrical", audioPart: "full", containerId: 18, setting: "Ws-kitchen", totalDuration: 10.22351 },
+    { name: "VID_20240403_235516_2.6_12.9_first", file: "audio/VID_20240403_235516_2.6_12.9_first.wav", material: "glass", shape: "cylindrical", audioPart: "first", containerId: 18, setting: "Ws-kitchen", totalDuration: 10.22351 },
+    { name: "VID_20240403_235516_2.6_12.9_second", file: "audio/VID_20240403_235516_2.6_12.9_second.wav", material: "glass", shape: "cylindrical", audioPart: "second", containerId: 18, setting: "Ws-kitchen", totalDuration: 10.22351 },
+    { name: "VID_20240411_235647_1.8_12.3", file: "audio/VID_20240411_235647_1.8_12.3.wav", material: "paperboard", shape: "semiconical", audioPart: "full", containerId: 45, setting: "Vgg-mrcr", totalDuration: 10.49168 },
+    { name: "VID_20240411_235647_1.8_12.3_first", file: "audio/VID_20240411_235647_1.8_12.3_first.wav", material: "paperboard", shape: "semiconical", audioPart: "first", containerId: 45, setting: "Vgg-mrcr", totalDuration: 10.49168 },
+    { name: "VID_20240411_235647_1.8_12.3_second", file: "audio/VID_20240411_235647_1.8_12.3_second.wav", material: "paperboard", shape: "semiconical", audioPart: "second", containerId: 45, setting: "Vgg-mrcr", totalDuration: 10.49168 },
+    { name: "VID_20240323_001443_1.9_12.2", file: "audio/VID_20240323_001443_1.9_12.2.wav", material: "paperboard", shape: "cylindrical", audioPart: "full", containerId: 36, setting: "Ws-kitchen", totalDuration: 10.28992 },
+    { name: "VID_20240323_001443_1.9_12.2_first", file: "audio/VID_20240323_001443_1.9_12.2_first.wav", material: "paperboard", shape: "cylindrical", audioPart: "first", containerId: 36, setting: "Ws-kitchen", totalDuration: 10.28992 },
+    { name: "VID_20240323_001443_1.9_12.2_second", file: "audio/VID_20240323_001443_1.9_12.2_second.wav", material: "paperboard", shape: "cylindrical", audioPart: "second", containerId: 36, setting: "Ws-kitchen", totalDuration: 10.28992 },
+    { name: "VID_20240403_233343_1.9_12.5", file: "audio/VID_20240403_233343_1.9_12.5.wav", material: "paperboard", shape: "semiconical", audioPart: "full", containerId: 42, setting: "Ws-kitchen", totalDuration: 10.66633 },
+    { name: "VID_20240403_233343_1.9_12.5_first", file: "audio/VID_20240403_233343_1.9_12.5_first.wav", material: "paperboard", shape: "semiconical", audioPart: "first", containerId: 42, setting: "Ws-kitchen", totalDuration: 10.66633 },
+    { name: "VID_20240403_233343_1.9_12.5_second", file: "audio/VID_20240403_233343_1.9_12.5_second.wav", material: "paperboard", shape: "semiconical", audioPart: "second", containerId: 42, setting: "Ws-kitchen", totalDuration: 10.66633 },
+    { name: "VID_20240412_000004_3.8_13.9", file: "audio/VID_20240412_000004_3.8_13.9.wav", material: "plastic", shape: "bottleneck", audioPart: "full", containerId: 32, setting: "Vgg-mrcr", totalDuration: 10.15661 },
+    { name: "VID_20240412_000004_3.8_13.9_first", file: "audio/VID_20240412_000004_3.8_13.9_first.wav", material: "plastic", shape: "bottleneck", audioPart: "first", containerId: 32, setting: "Vgg-mrcr", totalDuration: 10.15661 },
+    { name: "VID_20240412_000004_3.8_13.9_second", file: "audio/VID_20240412_000004_3.8_13.9_second.wav", material: "plastic", shape: "bottleneck", audioPart: "second", containerId: 32, setting: "Vgg-mrcr", totalDuration: 10.15661 },
+    { name: "VID_20240405_220856_1.7_12.9", file: "audio/VID_20240405_220856_1.7_12.9.wav", material: "plastic", shape: "bottleneck", audioPart: "full", containerId: 19, setting: "Vgg-mrcr", totalDuration: 11.16251 },
+    { name: "VID_20240405_220856_1.7_12.9_first", file: "audio/VID_20240405_220856_1.7_12.9_first.wav", material: "plastic", shape: "bottleneck", audioPart: "first", containerId: 19, setting: "Vgg-mrcr", totalDuration: 11.16251 },
+    { name: "VID_20240405_220856_1.7_12.9_second", file: "audio/VID_20240405_220856_1.7_12.9_second.wav", material: "plastic", shape: "bottleneck", audioPart: "second", containerId: 19, setting: "Vgg-mrcr", totalDuration: 11.16251 },
+    { name: "VID_20240122_001042_3.0_14.5", file: "audio/VID_20240122_001042_3.0_14.5.wav", material: "plastic", shape: "cylindrical", audioPart: "full", containerId: 1, setting: "Ws-kitchen", totalDuration: 11.47926 },
+    { name: "VID_20240122_001042_3.0_14.5_first", file: "audio/VID_20240122_001042_3.0_14.5_first.wav", material: "plastic", shape: "cylindrical", audioPart: "first", containerId: 1, setting: "Ws-kitchen", totalDuration: 11.47926 },
+    { name: "VID_20240122_001042_3.0_14.5_second", file: "audio/VID_20240122_001042_3.0_14.5_second.wav", material: "plastic", shape: "cylindrical", audioPart: "second", containerId: 1, setting: "Ws-kitchen", totalDuration: 11.47926 },
+    { name: "VID_20240405_220057_1.6_12.3", file: "audio/VID_20240405_220057_1.6_12.3.wav", material: "steel", shape: "cylindrical", audioPart: "full", containerId: 51, setting: "Vgg-mrcr", totalDuration: 10.7602 },
+    { name: "VID_20240405_220057_1.6_12.3_first", file: "audio/VID_20240405_220057_1.6_12.3_first.wav", material: "steel", shape: "cylindrical", audioPart: "first", containerId: 51, setting: "Vgg-mrcr", totalDuration: 10.7602 },
+    { name: "VID_20240405_220057_1.6_12.3_second", file: "audio/VID_20240405_220057_1.6_12.3_second.wav", material: "steel", shape: "cylindrical", audioPart: "second", containerId: 51, setting: "Vgg-mrcr", totalDuration: 10.7602 },
+    { name: "VID_20240211_193633_3.4_13.4", file: "audio/VID_20240211_193633_3.4_13.4.wav", material: "steel", shape: "bottleneck", audioPart: "full", containerId: 26, setting: "Vgg-mrcr", totalDuration: 10.05292 },
+    { name: "VID_20240211_193633_3.4_13.4_first", file: "audio/VID_20240211_193633_3.4_13.4_first.wav", material: "steel", shape: "bottleneck", audioPart: "first", containerId: 26, setting: "Vgg-mrcr", totalDuration: 10.05292 },
+    { name: "VID_20240211_193633_3.4_13.4_second", file: "audio/VID_20240211_193633_3.4_13.4_second.wav", material: "steel", shape: "bottleneck", audioPart: "second", containerId: 26, setting: "Vgg-mrcr", totalDuration: 10.05292 },
+    { name: "VID_20240211_203945_2.3_13.3", file: "audio/VID_20240211_203945_2.3_13.3.wav", material: "steel", shape: "semiconical", audioPart: "full", containerId: 28, setting: "Ws-kitchen", totalDuration: 10.95709 },
+    { name: "VID_20240211_203945_2.3_13.3_first", file: "audio/VID_20240211_203945_2.3_13.3_first.wav", material: "steel", shape: "semiconical", audioPart: "first", containerId: 28, setting: "Ws-kitchen", totalDuration: 10.95709 },
+    { name: "VID_20240211_203945_2.3_13.3_second", file: "audio/VID_20240211_203945_2.3_13.3_second.wav", material: "steel", shape: "semiconical", audioPart: "second", containerId: 28, setting: "Ws-kitchen", totalDuration: 10.95709 }
   ],
-  // PRACTICE: plastic, bottleneck-shaped recording; each part is presented once, in a
+  // PRACTICE: VID_20240331_163223 (plastic, bottleneck); each part is presented once, in a
   // random order, before the main trials. No feedback is shown. Set to [] for no practice.
   PRACTICE: [
-    { name: "VID_20240412_000004_3.8_13.9", file: "audio/VID_20240412_000004_3.8_13.9.wav", material: "plastic", shape: "bottleneck", audioPart: "full" },
-    { name: "VID_20240412_000004_3.8_13.9_first", file: "audio/VID_20240412_000004_3.8_13.9_first.wav", material: "plastic", shape: "bottleneck", audioPart: "first" },
-    { name: "VID_20240412_000004_3.8_13.9_second", file: "audio/VID_20240412_000004_3.8_13.9_second.wav", material: "plastic", shape: "bottleneck", audioPart: "second" }
+    { name: "VID_20240331_163223_2.0_12.5", file: "audio/VID_20240331_163223_2.0_12.5.wav", material: "plastic", shape: "bottleneck", audioPart: "full", containerId: 41, setting: "Ws-kitchen", totalDuration: 10.5 },
+    { name: "VID_20240331_163223_2.0_12.5_first", file: "audio/VID_20240331_163223_2.0_12.5_first.wav", material: "plastic", shape: "bottleneck", audioPart: "first", containerId: 41, setting: "Ws-kitchen", totalDuration: 10.5 },
+    { name: "VID_20240331_163223_2.0_12.5_second", file: "audio/VID_20240331_163223_2.0_12.5_second.wav", material: "plastic", shape: "bottleneck", audioPart: "second", containerId: 41, setting: "Ws-kitchen", totalDuration: 10.5 }
   ],
   // --- network ---
   // Several tablets share ONE Apps Script lock, so what matters is the number of
@@ -865,6 +894,13 @@ function endTrial() {
     true_material: s.material,
     shape: s.shape,
     audioPart: s.audioPart,
+    container_id: s.containerId,
+    setting: s.setting,
+    total_duration: s.totalDuration,
+    // length of the clip actually played: the whole recording for "full", half of it for
+    // "first"/"second" (computed from the table), and the length the browser measured on the file
+    clip_duration: s.audioPart === "full" ? s.totalDuration : Number((s.totalDuration / 2).toFixed(6)),
+    clip_duration_measured: isFinite(audio.duration) ? Number(audio.duration.toFixed(5)) : "",
     choice: ch,
     correct: ch === "" ? "" : (ch === s.material ? 1 : 0),
     choice_order: choiceOrder.join("|"),
